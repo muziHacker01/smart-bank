@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Banking Panel</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      /* background: linear-gradient(to right, #00b4db, #0083b0); */
+      
+      color: #333;
+      padding: 40px;
+    }
+
+    .bank-container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #0083b0;
+      margin-bottom: 25px;
+    }
+
+    .info p {
+      margin: 10px 0;
+      font-size: 1.1em;
+    }
+
+    .balance-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .transaction {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      background-color: #0083b0;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #005f7f;
+    }
+
+    .reset-btn {
+      background-color: #e74c3c;
+    }
+
+    .reset-btn:hover {
+      background-color: #c0392b;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.95em;
+    }
+
+    th {
+      background-color: #f5f5f5;
+      color: #333;
+    }
+
+    #nameInputSection {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    #nameInput {
+      padding: 10px;
+      font-size: 1em;
+      width: 60%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .deposit-row {
+      background-color: #e8f9e9; /* light green */
+      color: #2e7d32;
+      font-weight: bold;
+    }
+
+    .withdraw-row {
+      background-color: #fdeaea; /* light red */
+      color: #c0392b;
+      font-weight: bold;
+    }
+    html {
+    scroll-behavior: smooth;
+}
+marquee{
+    font-size: 20px;
+    background-color: rgb(41, 157, 161);
+    color: white;
+  </style>
+</head>
+<body>
+  <div class="bank-container">
+    <div id="nameInputSection">
+      <h2>Enter Your Name to Begin</h2>
+      <input type="text" id="nameInput" placeholder="e.g. Muzammil Shakeel" />
+      <button onclick="startApp()">Start</button>
+    </div>
+
+    <div id="mainBankApp" style="display:none;">
+      <h2 id="welcomeText">Welcome</h2>
+
+      <div class="info">
+        <p><strong>Account Title:</strong> <span id="accountTitle"></span></p>
+        <div class="balance-box">
+          <p><strong>Balance:</strong> <span id="balance">****</span></p>
+          <button id="toggleBalance">Show</button>
+        </div>
+      </div>
+
+      <div class="transaction">
+        <input type="number" id="amount" placeholder="Enter amount" />
+        <button onclick="deposit()">Deposit</button>
+        <button onclick="withdraw()">Withdraw</button>
+        <button class="reset-btn" onclick="resetBank()">Reset</button>
+      </div>
+
+      <div class="history">
+        <h4>Transaction History</h4>
+        <table id="historyTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Amount (Rs.)</th>
+              <th>Date & Time</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let balance = 0;
+    let showBalance = false;
+    let transactionCount = 0;
+    let userName = "";
+
+    const balanceEl = document.getElementById("balance");
+    const toggleBtn = document.getElementById("toggleBalance");
+    const historyBody = document.getElementById("historyBody");
+
+    function startApp() {
+      const name = document.getElementById("nameInput").value.trim();
+      if (name === "") {
+        Swal.fire('Name Required', 'Please enter your name to continue.', 'warning');
+        return;
+      }
+
+      userName = name;
+      document.getElementById("nameInputSection").style.display = "none";
+      document.getElementById("mainBankApp").style.display = "block";
+      document.getElementById("welcomeText").textContent = `Welcome, ${userName}`;
+      document.getElementById("accountTitle").textContent = userName;
+      updateBalance();
+    }
+
+    // ENTER key support on name input
+    document.getElementById("nameInput").addEventListener("keyup", function(e) {
+      if (e.key === "Enter") {
+        startApp();
+      }
+    });
+
+    function updateBalance() {
+      balanceEl.textContent = showBalance ? `Rs. ${balance.toFixed(2)}` : "****";
+    }
+
+    toggleBtn.addEventListener("click", () => {
+      showBalance = !showBalance;
+      toggleBtn.textContent = showBalance ? "Hide" : "Show";
+      updateBalance();
+    });
+
+    function deposit() {
+      const amount = parseFloat(document.getElementById("amount").value);
+      if (amount > 0) {
+        balance += amount;
+        transactionCount++;
+        addHistory("Deposit", amount);
+        updateBalance();
+        document.getElementById("amount").value = '';
+      } else {
+        Swal.fire('Invalid Amount', 'Please enter a valid deposit amount.', 'warning');
+      }
+    }
+
+    function withdraw() {
+      const amount = parseFloat(document.getElementById("amount").value);
+      if (amount > 0 && amount <= balance) {
+        balance -= amount;
+        transactionCount++;
+        addHistory("Withdraw", amount);
+        updateBalance();
+        document.getElementById("amount").value = '';
+      } else {
+        Swal.fire('Error', 'Invalid amount or insufficient balance.', 'error');
+      }
+    }
+
+    function addHistory(type, amount) {
+      const tr = document.createElement("tr");
+      tr.classList.add(type === "Deposit" ? "deposit-row" : "withdraw-row");
+
+      tr.innerHTML = `
+        <td>${transactionCount}</td>
+        <td>${type}</td>
+        <td>${amount.toFixed(2)}</td>
+        <td>${new Date().toLocaleString()}</td>
+      `;
+
+      historyBody.appendChild(tr); // ✅ ascending order
+    }
+
+    function resetBank() {
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "This will clear balance & history!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, reset it!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          balance = 0;
+          transactionCount = 0;
+          showBalance = false;
+          historyBody.innerHTML = '';
+          toggleBtn.textContent = "Show";
+          updateBalance();
+          Swal.fire('Reset!', 'Your account has been reset.', 'success');
+        }
+      });
+    }
+  </script>
+  <marquee behavior="" direction=""> Develop  by : Muzammil shakeel & muzammilshakeel80@gmail .com  </marquee>
+</body>
+</html>
